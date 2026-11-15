@@ -41,6 +41,7 @@ class PlayerFactory(
             canMute = supportedFeatures.contains(PlayerFeature.VOLUME_MUTE) && muteControl != null && muteControl != PLAYER_CONTROL_NONE,
             queueId = activeSource ?: currentMedia?.sourceId,
             isPlaying = state == PlayerState.PLAYING,
+            isPaused = state == PlayerState.PAUSED,
             isAnnouncing = announcementInProgress == true,
             canGroupWith = canGroupWith,
             groupMembers = groupMembers,

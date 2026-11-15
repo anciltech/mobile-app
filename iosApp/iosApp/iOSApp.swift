@@ -280,6 +280,11 @@ struct iOSApp: App {
         // Second coordinator init phase: the now-playing channel observers
         // need the Kotlin graph, which exists only after bootstrapKmp().
         NowPlayingCoordinator.shared.startObserving()
+        #if canImport(NowPlaying)
+        if #available(iOS 27.0, *) {
+            RemoteNowPlayingCoordinator.shared.start()
+        }
+        #endif
 
         // App-wide, so it belongs here for the same reason bootstrapKmp() does:
         // a CarPlay-only cold launch never connects the WindowGroup, so anything

@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   compile:
-    runs-on: macos-26
+    runs-on: xcode-27
     # A normal run takes 11-15 minutes. Without a limit, a hung test holds the
     # macOS runner for the 6-hour default.
     timeout-minutes: 45
@@ -108,7 +108,7 @@ jobs:
 
       # Simulator destination + signing disabled gives us a compile-only pass:
       # Kotlin framework compilation runs via the Xcode build phase script, and
-      # Swift compiles against the real iOS 26 SDK. No provisioning profile or
+      # Swift compiles against the real iOS 27 SDK. No provisioning profile or
       # distribution cert required.
       - name: Build (no signing, simulator target)
         if: ${{ !startsWith(github.head_ref, 'chore/bump-ios-build-') && !startsWith(github.head_ref, 'chore/bump-sendspin-v') }}
