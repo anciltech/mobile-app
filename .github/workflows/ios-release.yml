@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-26
+    runs-on: xcode-27
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
@@ -95,11 +95,12 @@ jobs:
             exit 1
           fi
 
-      - name: Import signing cert and provisioning profile
+      - name: Import signing cert and provisioning profiles
         env:
           CERT_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
           CERT_PASS: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
           PROFILE_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          REMOTE_PROFILE_B64: ${{ secrets.IOS_REMOTE_NOW_PLAYING_PROFILE_BASE64 }}
           KC_PASS: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
         run: |
           set -euo pipefail
@@ -107,6 +108,8 @@ jobs:
           # Decode secrets into files
           echo "$CERT_B64" | base64 -d > /tmp/dist.p12
           echo "$PROFILE_B64" | base64 -d > /tmp/profile.mobileprovision
+          : "${REMOTE_PROFILE_B64:?Configure the Remote Now Playing App Store provisioning profile}"
+          echo "$REMOTE_PROFILE_B64" | base64 -d > /tmp/remote-now-playing.mobileprovision
 
           # Create & unlock an ephemeral keychain. Put it at the front of the
           # user search list so xcodebuild/codesign find our identity before
@@ -137,7 +140,7 @@ jobs:
           # We use the traditional ~/Library/MobileDevice path; xcodebuild CLI
           # reads from here regardless of Xcode version.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp /tmp/profile.mobileprovision /tmp/remote-now-playing.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
           # Sanity check — we should see our Apple Distribution identity
           security find-identity -v -p codesigning "$KEYCHAIN"

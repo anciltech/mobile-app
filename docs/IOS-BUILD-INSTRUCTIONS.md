@@ -289,6 +289,14 @@ The `:--` fallback ensures ad-hoc signing if the variable is empty (e.g., CLI si
 
 ---
 
+## Remote speaker Now Playing
+
+Build with the iOS 27 SDK to include native Now Playing for room speakers. The app can still run on iOS 18.5 and later. To test, connect directly to a Music Assistant server over publicly reachable HTTPS, select a speaker with an active Music Assistant queue, and start or resume playback. Lock the iPhone and check artwork, playback progress, Play/Pause, Previous/Next, and seeking. Stop playback and check that the session stops presenting its track. Local playback on the iPhone has priority.
+
+The extension uses the direct server connection while iOS runs it. iOS blocks remote media extensions from connecting to LAN peers, including when the main app has Local Network permission. HTTP connections, WebRTC Remote Access, and client-certificate connections do not start the extension. Reopen the app to start a session or refresh the selected room if iOS has suspended it. Server-driven sessions while the app or extension is suspended require APNs support on the Music Assistant server.
+
+Automatic signing provisions `<app bundle id>.RemoteNowPlaying` alongside the app. For the main app's manual release workflow, create the App Store profile **Music Assistant Remote Now Playing App Store** for `io.music-assistant.mobile-client.RemoteNowPlaying` and configure the `IOS_REMOTE_NOW_PLAYING_PROFILE_BASE64` GitHub Actions secret. Both profiles must share the containing app's App ID prefix. The extension reads the app's build and marketing versions during the build.
+
 ## Troubleshooting
 
 ### `BUILD FAILED: 25.0.2` (Gradle)

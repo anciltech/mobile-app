@@ -21,7 +21,8 @@ EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64
 //                      Xcode Cloud needs Automatic.
 TEAM_ID = $(MA_TEAM_ID:default=GUYFAK8DC6)
 DEVELOPMENT_TEAM = $(TEAM_ID)
-PRODUCT_BUNDLE_IDENTIFIER = $(MA_BUNDLE_ID:default=io.music-assistant.mobile-client)
+MA_HOST_BUNDLE_ID = $(MA_BUNDLE_ID:default=io.music-assistant.mobile-client)
+PRODUCT_BUNDLE_IDENTIFIER = $(MA_HOST_BUNDLE_ID)
 APP_NAME = MusicAssistantClient
 
 MA_ENTITLEMENTS_YES = iosApp/CarPlay.entitlements
@@ -35,6 +36,12 @@ MA_SIGN_PROFILE_Manual = Music Assistant App Store
 MA_SIGN_STYLE_Automatic = Automatic
 MA_SIGN_IDENTITY_Automatic = Apple Development
 MA_SIGN_PROFILE_Automatic =
+// Manual release signing requires the matching profile for the embedded extension.
+MA_RELEASE_REMOTE_PROFILE = $(MA_REMOTE_PROFILE:default=Music Assistant Remote Now Playing App Store)
+MA_REMOTE_SIGN_PROFILE_Manual = $(MA_RELEASE_REMOTE_PROFILE)
+MA_REMOTE_SIGN_PROFILE_Automatic =
+MA_REMOTE_SIGN_PROFILE = $(MA_REMOTE_SIGN_PROFILE_$(MA_RELEASE_SIGNING))
+
 MA_RELEASE_SIGN_STYLE = $(MA_SIGN_STYLE_$(MA_RELEASE_SIGNING))
 MA_RELEASE_SIGN_IDENTITY = $(MA_SIGN_IDENTITY_$(MA_RELEASE_SIGNING))
 MA_RELEASE_SIGN_PROFILE = $(MA_SIGN_PROFILE_$(MA_RELEASE_SIGNING))

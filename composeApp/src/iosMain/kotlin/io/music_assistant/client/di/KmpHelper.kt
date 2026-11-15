@@ -53,6 +53,7 @@ import io.music_assistant.client.settings.carBulkActions
 import io.music_assistant.client.settings.carTapAction
 import io.music_assistant.client.settings.planCarItemDispatch
 import io.music_assistant.client.settings.toCarDispatch
+import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.home.buildDisplayRows
 import io.music_assistant.client.ui.compose.home.upNext
 import io.music_assistant.client.ui.compose.home.visibleHomeFolders
@@ -62,6 +63,8 @@ import io.music_assistant.client.ui.theme.accentPrimary
 import io.music_assistant.client.utils.HasConnectionData
 import io.music_assistant.client.utils.LocalNetworkPermissionGate
 import io.music_assistant.client.utils.LocalNetworkPermissionProber
+import io.music_assistant.client.utils.SessionState
+import io.music_assistant.client.utils.authenticatedToken
 import io.music_assistant.client.utils.currentTimeMillis
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -71,6 +74,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -251,6 +255,52 @@ object KmpHelper : KoinComponent {
     fun observeReadiness(onChanged: (Boolean) -> Unit): Cancellable {
         val job = mainScope.launch {
             serviceClient.isReadyForCommands.collect { onChanged(it) }
+        }
+        return Cancellable { job.cancel() }
+    }
+
+    // MARK: - Remote playback on iOS
+    fun observeRemoteNowPlaying(onChanged: (RemoteNowPlayingTarget?, Boolean) -> Unit): Cancellable {
+        val job = mainScope.launch {
+            combine(
+                serviceClient.sessionState,
+                settingsRepository.clientCertificateAlias,
+                mainDataSource.playersData,
+                mainDataSource.selectedPlayerId,
+                mainDataSource.localPlayer,
+            ) { session, clientCertificate, players, selection, localPlayer ->
+                val preserve = session is SessionState.Disconnected.Backgrounded ||
+                    session is SessionState.Reconnecting.Direct
+                val token = session.authenticatedToken()
+                // iOS prevents remote media extensions from reaching LAN peers.
+                val direct = (session as? SessionState.Connected.Direct)?.takeIf { it.connectionInfo.isTls }
+                if (clientCertificate != null || direct == null || token == null ||
+                    localPlayer?.player?.isPlaying == true
+                ) {
+                    return@combine null to preserve
+                }
+                if (players is DataState.Loading || players is DataState.Stale) {
+                    return@combine null to true
+                }
+                val active = (players as? DataState.Data)?.data.orEmpty().filter {
+                    !it.isLocal && it.player.isAvailable && it.player.canPlay &&
+                        !it.player.isAnnouncing &&
+                        (it.player.isPlaying || it.player.isPaused) &&
+                        it.queueInfo?.let { queue -> !queue.ended && queue.currentItem != null } == true
+                }
+                val player = active.firstOrNull { it.playerId == selection }
+                    ?: active.firstOrNull { it.player.isPlaying }
+                val target = player?.queueId?.let { queueId ->
+                    RemoteNowPlayingTarget(
+                        direct.connectionInfo.webUrl,
+                        requireNotNull(direct.serverInfo).serverId,
+                        token,
+                        queueId,
+                        active.firstOrNull { it.playerId == queueId }?.player?.name ?: player.player.name,
+                    )
+                }
+                target to false
+            }.distinctUntilChanged().collect { (target, preserve) -> onChanged(target, preserve) }
         }
         return Cancellable { job.cancel() }
     }
@@ -714,4 +764,14 @@ object KmpHelper : KoinComponent {
         mainDataSource.setFavorite(item, state)
         return true
     }
+}
+
+data class RemoteNowPlayingTarget(
+    val serverUrl: String,
+    val serverId: String,
+    val token: String,
+    val queueId: String,
+    val playerName: String,
+) {
+    override fun toString(): String = "RemoteNowPlayingTarget"
 }
