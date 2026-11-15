@@ -273,8 +273,9 @@ object KmpHelper : KoinComponent {
                     session is SessionState.Reconnecting.Direct
                 val token = session.authenticatedToken()
                 // iOS prevents remote media extensions from reaching LAN peers.
-                if (clientCertificate != null || session !is SessionState.Connected.Direct ||
-                    !session.connectionInfo.isTls || token == null || localPlayer?.player?.isPlaying == true
+                val direct = (session as? SessionState.Connected.Direct)?.takeIf { it.connectionInfo.isTls }
+                if (clientCertificate != null || direct == null || token == null ||
+                    localPlayer?.player?.isPlaying == true
                 ) {
                     return@combine null to preserve
                 }
@@ -291,8 +292,8 @@ object KmpHelper : KoinComponent {
                     ?: active.firstOrNull { it.player.isPlaying }
                 val target = player?.queueId?.let { queueId ->
                     RemoteNowPlayingTarget(
-                        session.connectionInfo.webUrl,
-                        requireNotNull(session.serverInfo).serverId,
+                        direct.connectionInfo.webUrl,
+                        requireNotNull(direct.serverInfo).serverId,
                         token,
                         queueId,
                         active.firstOrNull { it.playerId == queueId }?.player?.name ?: player.player.name,
