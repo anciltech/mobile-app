@@ -90,6 +90,7 @@ final class RemoteNowPlayingCoordinator {
     }
 
     private func endSession() async throws {
+        try RemotePlaybackContext.remove()
         if let current {
             try await current.end()
         } else if context == nil {
@@ -101,7 +102,6 @@ final class RemoteNowPlayingCoordinator {
         published = nil
         context = nil
         needsPrimary = false
-        try RemotePlaybackContext.remove()
     }
 }
 #endif

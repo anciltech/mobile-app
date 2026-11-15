@@ -19,10 +19,5 @@
         <key>EXExtensionPointIdentifier</key>
         <string>com.apple.nowplaying.remote-media</string>
     </dict>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsLocalNetworking</key>
-        <true/>
-    </dict>
 </dict>
 </plist>

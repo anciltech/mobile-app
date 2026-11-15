@@ -272,8 +272,9 @@ object KmpHelper : KoinComponent {
                 val preserve = session is SessionState.Disconnected.Backgrounded ||
                     session is SessionState.Reconnecting.Direct
                 val token = session.authenticatedToken()
-                if (clientCertificate != null || session !is SessionState.Connected.Direct || token == null ||
-                    localPlayer?.player?.isPlaying == true
+                // iOS prevents remote media extensions from reaching LAN peers.
+                if (clientCertificate != null || session !is SessionState.Connected.Direct ||
+                    !session.connectionInfo.isTls || token == null || localPlayer?.player?.isPlaying == true
                 ) {
                     return@combine null to preserve
                 }
